@@ -1,0 +1,11 @@
+*.csv
+
+experiments_analysis.md
+sstable_files_explained.md
+sstables_complete_guide.md
+viva_presentation.md
+viva_speech.md
+
+db_bench
+
+__pycache__
