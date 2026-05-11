@@ -1,5 +1,3 @@
-*.csv
-
 experiments_analysis.md
 sstable_files_explained.md
 sstables_complete_guide.md
@@ -7,5 +5,17 @@ viva_presentation.md
 viva_speech.md
 
 db_bench
+PROJECT_GUIDE.md
+
+# rocksdb build artefacts only — source is tracked
+rocksdb/**/*.o
+rocksdb/**/*.a
+rocksdb/db_bench
+rocksdb/db_bench_*
+rocksdb/ldb
+rocksdb/sst_dump
+rocksdb/rocksdb_dump
+rocksdb/build/
+rocksdb/build_tools/LANG_TARGETS
 
 __pycache__
