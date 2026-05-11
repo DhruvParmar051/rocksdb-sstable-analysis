@@ -7,6 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Defines the on-disk grammar of every SST file: BlockHandle, Footer, BlockTrailer.
+// Entry:   Footer::DecodeFrom(), BlockHandle (offset+size pointer used by every index entry)
+// Why:     The read path starts here — BlockBasedTable::Open() reads the 56-byte Footer to
+//          locate the index block and metaindex block before any key lookup can happen.
+// Tradeoff: Per-block BlockTrailer (5B: 1B compression + 4B CRC32c) localises corruption
+//           to one ~4KB block; a file-level checksum would make one bad byte unreadable.
+// See: sstable_files_explained.md §1
+
 #pragma once
 
 #include <array>

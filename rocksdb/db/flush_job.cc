@@ -7,6 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    MemTable → L0 SST pipeline; entry point for the write path reaching disk.
+// Entry:   FlushJob::WriteLevel0Table() → BuildTable()
+// Why:     Calls the same BuildTable() as compaction — flush and compaction produce identical
+//          SST format. WAL is the durability guarantee until this flush completes.
+// Tradeoff: L0 files may overlap key ranges (unlike L1+), allowing fast flush at the cost
+//           of checking all L0 files on every read.
+// See: sstable_files_explained.md §12
+
 #include "db/flush_job.h"
 
 #include <algorithm>

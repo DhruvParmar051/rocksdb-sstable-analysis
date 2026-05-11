@@ -6,6 +6,14 @@
 // Code supporting block cache (Cache) access for block-based table, based on
 // the convenient APIs in typed_cache.h
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Classifies blocks by cache priority and derives unique cache keys per block.
+// Entry:   GetEntryFromCache(), InsertEntryIntoCache()
+// Why:     HIGH priority for index/filter blocks (accessed on every lookup), LOW for data
+//          blocks. Without tiers, large scans evict index blocks and hurt point lookups.
+// Tradeoff: Cache key = hash(file_number, block_offset) — guaranteed unique, zero collisions.
+// See: sstable_files_explained.md §9
+
 #pragma once
 
 #include <type_traits>

@@ -3,6 +3,14 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Per-Get() state machine carried across MemTable and all SST levels during a lookup.
+// Entry:   GetContext::SaveValue() — called by DataBlockIter on each candidate key
+// Why:     A single Get() may span multiple SSTs; GetContext accumulates results and decides
+//          whether to keep searching. Tombstone (kTypeDeletion) short-circuits the search.
+// Tradeoff: Adds one indirection per key match; enables merge operators and tombstones.
+// See: sstable_files_explained.md §3
+
 #pragma once
 #include <string>
 

@@ -7,6 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Atomic MANIFEST record — the unit of version change (add/remove SST files).
+// Entry:   VersionEdit::AddFile(), DeleteFile(), EncodeTo() / DecodeFrom()
+// Why:     Files only become visible to readers after their VersionEdit is durably written
+//          via LogAndApply(). Crash safety: partial files with no VersionEdit are ignored
+//          on recovery — no corruption possible.
+// Tradeoff: Every flush/compaction pays one MANIFEST write; the guarantee is worth it.
+// See: sstable_files_explained.md §13
+
 #pragma once
 #include <algorithm>
 #include <optional>

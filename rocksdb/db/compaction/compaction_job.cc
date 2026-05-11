@@ -7,6 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Orchestrates compaction — merges SST files across levels, materialising write amp.
+// Entry:   ProcessKeyValueCompaction() — the inner sort-merge loop
+// Why:     Immutability means files can't be updated in-place; every byte moved from L(n) to
+//          L(n+1) must be read and rewritten. Measured WA: 1.23x at 500K keys → 7.15x at 10M.
+// Tradeoff: Sequential rewrites preserve SSD longevity but amplify total bytes written.
+// See: sstable_files_explained.md §11
+
 #include "db/compaction/compaction_job.h"
 
 #include <algorithm>

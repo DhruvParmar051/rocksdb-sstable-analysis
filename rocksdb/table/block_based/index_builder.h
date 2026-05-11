@@ -7,6 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Builds the index block mapping separator keys to BlockHandles (data block locations).
+// Entry:   AddIndexEntry(), Finish()
+// Why:     Three strategies: BinarySearch (default, one entry per block), Hash (O(1) prefix
+//          lookup), Partitioned (two-level for huge SSTs where flat index exceeds cache).
+// Tradeoff: Larger index = more cache pressure; partitioned index trades one extra I/O for
+//           smaller per-level index blocks in very large files.
+// See: sstable_files_explained.md §7
+
 #pragma once
 
 #include <cinttypes>

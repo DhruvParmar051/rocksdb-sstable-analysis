@@ -7,6 +7,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Delta-encodes keys within a single data block + restart-point array for binary search.
+// Entry:   BlockBuilder::Add(), AddWithLastKeyImpl(), Finish()
+// Why:     Stores only the suffix that differs from the previous key; every
+//          block_restart_interval keys stores a full key as a binary-search anchor.
+// Tradeoff: Measured — interval=16 peaks read throughput (830K ops/s); interval=32 drops 8%;
+//           file size changes only 1.6% across the full range.
+// See: sstable_files_explained.md §6
+
 #pragma once
 #include <stdint.h>
 

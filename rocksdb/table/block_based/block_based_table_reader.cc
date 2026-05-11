@@ -6,6 +6,14 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    SST reader — every point lookup and range scan goes through this class.
+// Entry:   Open() (parse footer + pre-warm cache), Get() (3-layer filter chain), NewIterator()
+// Why:     Implements Bloom→Index→Data pipeline: filter check eliminates ~99% of absent-key
+//          I/Os; index seek gives block offset; BlockFetcher loads the data block.
+// Tradeoff: Three layers add latency for true positives; eliminate disk I/O for misses.
+// See: sstable_files_explained.md §5
+
 #include "table/block_based/block_based_table_reader.h"
 
 #include <algorithm>

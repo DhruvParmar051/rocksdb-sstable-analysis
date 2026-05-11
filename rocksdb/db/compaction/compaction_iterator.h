@@ -2,6 +2,14 @@
 //  This source code is licensed under both the GPLv2 (found in the
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Key-visibility engine shared by flush and compaction — decides which keys survive.
+// Entry:   CompactionIterator::NextFromInput()
+// Why:     Drops shadowed versions, applies tombstones, collapses Merge operands. Without this,
+//          deleted keys and stale versions accumulate indefinitely across levels.
+// Tradeoff: Must read every key to apply visibility rules — no shortcut exists.
+// See: sstable_files_explained.md §10
+
 #pragma once
 
 #include <algorithm>

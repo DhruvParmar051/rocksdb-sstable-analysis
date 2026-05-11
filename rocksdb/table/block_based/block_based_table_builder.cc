@@ -7,6 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    SST writer — every SST file ever created passed through this class.
+// Entry:   Add(key,value), Flush(), WriteBlock(), Finish()
+// Why:     Encodes every format decision: block size, compression, filter type, index type.
+//          The Rep struct holds all mutable builder state (data_block, filter_builder, etc).
+// Tradeoff: Finish() is one-shot and irreversible — immutability is enforced here by design.
+// See: sstable_files_explained.md §4
+
 #include "table/block_based/block_based_table_builder.h"
 
 #include <atomic>

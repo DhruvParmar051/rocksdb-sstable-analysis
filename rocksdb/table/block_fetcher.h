@@ -7,6 +7,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Single choke point for all block I/O: pread() → CRC32c verify → decompress.
+// Entry:   BlockFetcher::ReadBlockContents()
+// Why:     Every data/index/filter block read goes through here — centralising I/O enables
+//          persistent cache, async prefetch, and compression without touching callers.
+// Tradeoff: One extra call layer per block read; worth it for the feature surface.
+// See: sstable_files_explained.md §2
+
 #pragma once
 #include "memory/memory_allocator_impl.h"
 #include "table/block_based/block.h"

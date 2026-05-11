@@ -18,6 +18,15 @@
 // Version,VersionSet are thread-compatible, but require external
 // synchronization on all accesses.
 
+// [Project annotation — RocksDB SSTable analysis]
+// Role:    Live-file registry — tracks which SST files exist at which level at any moment.
+// Entry:   VersionSet::LogAndApply(), Version::Get(), SuperVersion acquisition
+// Why:     SuperVersion bundles MemTable + Version so readers hold a consistent snapshot;
+//          compaction cannot delete files a reader is actively using. FilePicker implements
+//          the L0-all-files vs L1+-binary-search strategy per level.
+// Tradeoff: SuperVersion ref-counting adds overhead per Get(); prevents use-after-free on files.
+// See: sstable_files_explained.md §14
+
 #pragma once
 #include <atomic>
 #include <deque>
