@@ -1,0 +1,273 @@
+load("@fbcode_macros//build_defs:build_file_migration.bzl", "fbcode_target", "non_fbcode_target")
+load("@fbcode_macros//build_defs:cpp_library.bzl", "cpp_library")
+load("@fbsource//tools/build_defs/dirsync:fb_dirsync_cpp_library.bzl", "fb_dirsync_cpp_library")
+load("../defs.bzl", "folly_xplat_library")
+
+oncall("fbcode_entropy_wardens_folly")
+
+fb_dirsync_cpp_library(
+    name = "core_cached_shared_ptr",
+    headers = [
+        "CoreCachedSharedPtr.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        ":cache_locality",
+        "//folly:cpp_attributes",
+        "//folly:portability",
+        "//folly:unit",
+        "//folly/synchronization:hazptr",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "dynamic_bounded_queue",
+    headers = [
+        "DynamicBoundedQueue.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "fbsource//third-party/glog:glog",
+        ":cache_locality",
+        ":unbounded_queue",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "unbounded_queue",
+    headers = [
+        "UnboundedQueue.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "fbsource//third-party/glog:glog",
+        ":cache_locality",
+        "//folly:constexpr_math",
+        "//folly:optional",
+        "//folly:traits",
+        "//folly/lang:align",
+        "//folly/synchronization:hazptr",
+        "//folly/synchronization:saturating_semaphore",
+        "//folly/synchronization:wait_options",
+        "//folly/synchronization/detail:spin",
+    ],
+)
+
+non_fbcode_target(
+    _kind = folly_xplat_library,
+    name = "concurrent_hash_map",
+    compiler_flags = [
+        "-fno-omit-frame-pointer",
+    ],
+    raw_headers = [
+        "ConcurrentHashMap.h",
+        "detail/ConcurrentHashMap-detail.h",
+    ],
+    exported_deps = [
+        "fbsource//xplat/folly/synchronization:hazptr",
+        "//xplat/folly:optional",
+        "//xplat/folly:scope_guard",
+        "//xplat/folly/container:heterogeneous_access",
+        "//xplat/folly/container/detail:f14_mask",
+        "//xplat/folly/lang:exception",
+    ],
+)
+
+non_fbcode_target(
+    _kind = folly_xplat_library,
+    name = "deadlock_detector",
+    srcs = ["DeadlockDetector.cpp"],
+    compiler_flags = [
+        "-fno-omit-frame-pointer",
+    ],
+    raw_headers = ["DeadlockDetector.h"],
+    exported_deps = [
+        "//xplat/folly:executor",
+        "//xplat/folly/executors:queue_observer",
+    ],
+)
+
+non_fbcode_target(
+    _kind = folly_xplat_library,
+    name = "cache_locality",
+    srcs = [
+        "CacheLocality.cpp",
+    ],
+    compiler_flags = [
+        "-fno-omit-frame-pointer",
+    ],
+    cxx_deps = [
+        "//xplat/third-party/linker_lib:dl",
+    ],
+    fbandroid_deps = [
+        "//xplat/third-party/linker_lib:dl",
+    ],
+    raw_headers = [
+        "CacheLocality.h",
+    ],
+    deps = [
+        "fbsource//xplat/folly/hash:hash",
+        "fbsource//xplat/folly/portability:fcntl",
+        "fbsource//xplat/folly/portability:fmt_compile",
+        "fbsource//xplat/folly/portability:unistd",
+        "//third-party/fmt:fmt",
+        "//third-party/glog:glog",
+        "//xplat/folly:optional",
+        "//xplat/folly/container:reserve",
+        "//xplat/folly/lang:exception",
+        "//xplat/folly/system:thread_id",
+    ],
+    exported_deps = [
+        "fbsource//xplat/folly/synchronization:atomic_ref",
+        "//xplat/folly:indestructible",
+        "//xplat/folly:likely",
+        "//xplat/folly:memory",
+        "//xplat/folly:portability",
+        "//xplat/folly:scope_guard",
+        "//xplat/folly/detail:static_singleton_manager",
+        "//xplat/folly/lang:align",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "thread_cached_synchronized",
+    headers = ["ThreadCachedSynchronized.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly:shared_mutex",
+        "//folly:thread_local",
+        "//folly:utility",
+        "//folly/lang:access",
+        "//folly/synchronization:lock",
+        "//folly/synchronization:relaxed_atomic",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "atomic_shared_ptr",
+    headers = [
+        "AtomicSharedPtr.h",
+        "detail/AtomicSharedPtr-detail.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly:packed_sync_ptr",
+        "//folly/lang:safe_assert",
+        "//folly/memory:sanitize_leak",
+        "//folly/synchronization:atomic_struct",
+        "//folly/synchronization:atomic_util",
+        "//folly/synchronization/detail:atomic_utils",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "priority_unbounded_queue_set",
+    headers = [
+        "PriorityUnboundedQueueSet.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        ":unbounded_queue",
+        "//folly:memory",
+        "//folly/lang:align",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "process_local_unique_id",
+    srcs = ["ProcessLocalUniqueId.cpp"],
+    headers = ["ProcessLocalUniqueId.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    deps = [
+        "//folly:likely",
+        "//folly/synchronization:relaxed_atomic",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "singleton_relaxed_counter",
+    headers = [
+        "SingletonRelaxedCounter.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly:likely",
+        "//folly:portability",
+        "//folly:synchronized",
+        "//folly:utility",
+        "//folly/detail:static_singleton_manager",
+        "//folly/detail:thread_local_globals",
+        "//folly/lang:safe_assert",
+        "//folly/synchronization:atomic_ref",
+    ],
+)
+
+# !!!! fbcode/folly/concurrency/TARGETS was merged into this file, see https://fburl.com/workplace/xl8l9yuo for more info !!!!
+
+fbcode_target(
+    _kind = cpp_library,
+    name = "cache_locality",
+    srcs = ["CacheLocality.cpp"],
+    headers = ["CacheLocality.h"],
+    deps = [
+        "fbsource//third-party/fmt:fmt",
+        "fbsource//third-party/glog:glog",
+        "//folly:indestructible",
+        "//folly:memory",
+        "//folly:scope_guard",
+        "//folly/container:reserve",
+        "//folly/hash:hash",
+        "//folly/lang:exception",
+        "//folly/portability:fcntl",
+        "//folly/portability:fmt_compile",
+        "//folly/portability:unistd",
+        "//folly/system:thread_id",
+    ],
+    exported_deps = [
+        "//folly:likely",
+        "//folly:portability",
+        "//folly/lang:align",
+        "//folly/synchronization:atomic_ref",
+    ],
+    external_deps = [
+        ("glibc", None, "dl"),
+    ],
+)
+
+fbcode_target(
+    _kind = cpp_library,
+    name = "concurrent_hash_map",
+    headers = [
+        "ConcurrentHashMap.h",
+        "detail/ConcurrentHashMap-detail.h",
+    ],
+    exported_deps = [
+        "//folly:optional",
+        "//folly:scope_guard",
+        "//folly/container:heterogeneous_access",
+        "//folly/container/detail:f14_mask",
+        "//folly/lang:exception",
+        "//folly/synchronization:hazptr",
+    ],
+)
+
+fbcode_target(
+    _kind = cpp_library,
+    name = "deadlock_detector",
+    srcs = ["DeadlockDetector.cpp"],
+    headers = [
+        "DeadlockDetector.h",
+    ],
+    exported_deps = [
+        "//folly:executor",
+        "//folly/executors:queue_observer",
+    ],
+)

@@ -1,0 +1,54 @@
+load("@fbsource//tools/build_defs/dirsync:fb_dirsync_cpp_library.bzl", "fb_dirsync_cpp_library")
+load("../defs.bzl", "folly_xplat_library")
+
+oncall("fbcode_entropy_wardens_folly")
+
+fb_dirsync_cpp_library(
+    name = "static_tracepoint",
+    headers = [
+        "StaticTracepoint.h",
+        "StaticTracepoint-ELF.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly:c_portability",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "scoped_trace_section",
+    headers = [
+        "ScopedTraceSection.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+)
+
+fb_dirsync_cpp_library(
+    name = "async_stack",
+    srcs = [
+        "AsyncStack.cpp",
+    ],
+    headers = [
+        "AsyncStack.h",
+        "AsyncStack-inl.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    deps = [
+        "fbsource//third-party/glog:glog",
+        "//folly:indestructible",
+        "//folly:likely",
+        "//folly:synchronized",
+        "//folly/lang:hint",
+        "//folly/portability:pthread",
+    ],
+    exported_deps = [
+        "//folly:c_portability",
+        "//folly:cpp_attributes",
+        "//folly:function",
+        "//folly:portability",
+        "//folly/coro:coroutine",
+    ],
+)

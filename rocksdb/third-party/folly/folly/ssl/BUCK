@@ -1,0 +1,123 @@
+load("@fbsource//tools/build_defs/dirsync:fb_dirsync_cpp_library.bzl", "fb_dirsync_cpp_library")
+load("../defs.bzl", "folly_xplat_cxx_library")
+
+oncall("fbcode_entropy_wardens_folly")
+
+fb_dirsync_cpp_library(
+    name = "openssl_ptr_types",
+    headers = ["OpenSSLPtrTypes.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    exported_deps = [
+        "fbsource//third-party/glog:glog",
+        "//folly:memory",
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "openssl_hash",
+    srcs = ["OpenSSLHash.cpp"],
+    headers = ["OpenSSLHash.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    deps = [
+        "fbsource//third-party/fmt:fmt",
+        "//folly:format",
+    ],
+    exported_deps = [
+        ":openssl_ptr_types",
+        "//folly:exception",
+        "//folly:range",
+        "//folly/io:iobuf",
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "openssl_cert_utils",
+    srcs = ["OpenSSLCertUtils.cpp"],
+    headers = ["OpenSSLCertUtils.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    deps = [
+        "//folly:file_util",
+        "//folly:scope_guard",
+        "//folly:string",
+    ],
+    exported_deps = [
+        ":openssl_ptr_types",
+        "//folly:optional",
+        "//folly/io:iobuf",
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "openssl_version_finder",
+    headers = ["OpenSSLVersionFinder.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    exported_deps = [
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "openssl_ticket_handler",
+    headers = ["OpenSSLTicketHandler.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    exported_deps = [
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "ssl_session",
+    headers = ["SSLSession.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    exported_deps = [],
+)
+
+fb_dirsync_cpp_library(
+    name = "ssl_session_manager",
+    srcs = ["SSLSessionManager.cpp"],
+    headers = ["SSLSessionManager.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    deps = [
+        "//folly:overload",
+        "//folly/ssl/detail:openssl_session",
+    ],
+    exported_deps = [
+        ":openssl_ptr_types",
+        ":ssl_session",
+        "//folly/portability:openssl",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "password_collector",
+    srcs = ["PasswordCollector.cpp"],
+    headers = ["PasswordCollector.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+)
+
+fb_dirsync_cpp_library(
+    name = "openssl_key_utils",
+    srcs = ["OpenSSLKeyUtils.cpp"],
+    headers = ["OpenSSLKeyUtils.h"],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_cxx_library,
+    deps = [
+        ":password_collector",
+        "//folly/portability:openssl",
+    ],
+    exported_deps = [
+        ":openssl_ptr_types",
+        "//folly:range",
+    ],
+)

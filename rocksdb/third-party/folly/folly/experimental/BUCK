@@ -1,0 +1,52 @@
+load("@fbsource//tools/build_defs/dirsync:fb_dirsync_cpp_library.bzl", "fb_dirsync_cpp_library")
+load("@fbsource//xplat/folly:defs.bzl", "folly_xplat_library")
+
+oncall("fbcode_entropy_wardens_folly")
+
+fb_dirsync_cpp_library(
+    name = "event_count",
+    headers = [
+        "EventCount.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly/synchronization:event_count",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "flat_combining_priority_queue",
+    headers = [
+        "FlatCombiningPriorityQueue.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly/concurrency/container:flat_combining_priority_queue",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "function_scheduler",
+    headers = [
+        "FunctionScheduler.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly/executors:function_scheduler",
+    ],
+)
+
+fb_dirsync_cpp_library(
+    name = "threaded_repeating_function_runner",
+    headers = [
+        "ThreadedRepeatingFunctionRunner.h",
+    ],
+    use_raw_headers = True,
+    xplat_impl = folly_xplat_library,
+    exported_deps = [
+        "//folly/executors:threaded_repeating_function_runner",
+    ],
+)
