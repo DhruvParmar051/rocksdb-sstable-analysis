@@ -1,9 +1,8 @@
 # sstable_experiments — Python-driven RocksDB SSTable experiments
 
-This package replaces the shell-script workflow under `experiments/run_exp*.sh`
-with a Python-controlled framework. Pass 1 (this commit) wraps the existing
-`db_bench` binary via subprocess. Pass 2 will add a pybind11 module
-(`sstable_experiments._native`) for crash-injection scenarios.
+This package wraps the `db_bench` binary via subprocess and provides
+a clean Python API for running RocksDB SSTable experiments, parsing results,
+and generating figures.
 
 ## Prerequisites
 
@@ -43,7 +42,7 @@ Stress / failure scenarios (Requirement §E):
 python -m sstable_experiments.stress --scenario size        # §E.1
 python -m sstable_experiments.stress --scenario skew        # §E.2
 python -m sstable_experiments.stress --scenario assumption  # §E.4
-# --scenario crash  → §E.3, blocked on pybind11 pass
+python -m sstable_experiments.stress --scenario crash       # §E.3
 ```
 
 ## Library use

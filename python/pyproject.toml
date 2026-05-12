@@ -12,9 +12,6 @@ dependencies = [
     "matplotlib>=3.7",
 ]
 
-[project.optional-dependencies]
-# Reserved for the pybind11 pass-2 native extension.
-native = ["pybind11>=2.12", "scikit-build-core>=0.9"]
 
 [tool.setuptools.packages.find]
 where = ["."]

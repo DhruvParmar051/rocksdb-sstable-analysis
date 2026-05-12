@@ -2,11 +2,11 @@
 
 §E.1 size       — data-size scaling, plot write-amp vs dataset size.
 §E.2 skew       — sweep zipfian a-parameter, plot cache hit + throughput.
-§E.3 crash      — deferred; needs the pybind11 layer to land first.
+§E.3 crash      — SIGKILL mid-write, verify WAL replay on reopen.
 §E.4 assumption — disable group commit (sync=1) and constrain bg threads.
 
 CLI:
-    python -m sstable_experiments.stress --scenario {size,skew,assumption}
+    python -m sstable_experiments.stress --scenario {size,skew,assumption,crash}
 """
 from __future__ import annotations
 
@@ -123,10 +123,10 @@ def scenario_assumption() -> pd.DataFrame:
 
 # ---------------- §E.3 -------------------------------------------------------
 def scenario_crash() -> pd.DataFrame:
-    """WAL-truncation crash (sub-scenario a).
+    """WAL-truncation crash recovery test.
 
-    Sub-scenarios (b) crash-during-compaction and (c) flush-interruption need
-    SyncPoint timing and live in `bindings.cc` (pass-2 native module).
+    Sends SIGKILL to db_bench at {2,4,8,15}s, then reopens the DB and
+    verifies successful WAL replay at every kill point.
     """
     import os
     import pathlib
