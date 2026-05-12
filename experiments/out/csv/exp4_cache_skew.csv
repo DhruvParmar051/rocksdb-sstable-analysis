@@ -1,0 +1,9 @@
+clcache_mb,distribution,ops_sec,cache_hit_ratio
+1,uniform,895792,0.0094
+1,zipfian,841269,0.0087
+16,uniform,909851,0.147
+16,zipfian,918050,0.147
+64,uniform,1055152,0.5436
+64,zipfian,1047224,0.5429
+256,uniform,1196422,0.7804
+256,zipfian,1186295,0.78
