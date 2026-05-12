@@ -23,12 +23,8 @@
 9. [Experiment 3 — Block Size](#9-experiment-3--block-size)
 10. [Experiment 4 — Block Cache and Zipfian Access](#10-experiment-4--block-cache-and-zipfian-access)
 11. [Experiment 5 — Write Amplification](#11-experiment-5--write-amplification)
-12. [Stress Experiment §E.1 — Data-Size Scaling](#12-stress-experiment-e1--data-size-scaling)
-13. [Stress Experiment §E.2 — Skewed Workload](#13-stress-experiment-e2--skewed-workload)
-14. [Stress Experiment §E.3 — WAL Crash Recovery](#14-stress-experiment-e3--wal-crash-recovery)
-15. [Stress Experiment §E.4 — Violated Assumptions](#15-stress-experiment-e4--violated-assumptions)
-16. [Summary and Key Findings](#16-summary-and-key-findings)
-17. [Conclusion](#17-conclusion)
+12. [Summary and Key Findings](#12-summary-and-key-findings)
+13. [Conclusion](#13-conclusion)
 
 ---
 
@@ -45,7 +41,7 @@ RocksDB solves this by making a radical choice: **never update data in place**. 
 This project reverse-engineers RocksDB's SSTable layer at three levels:
 
 1. **Source code** — 14 key files in `rocksdb/table/` and `rocksdb/db/` are annotated with project-specific comment blocks explaining their role, entry points, and tradeoffs.
-2. **Experiments** — a Python package (`sstable_experiments`) wraps the real `db_bench` binary and runs 5 core experiments + 4 stress scenarios, each isolating one SSTable design parameter.
+2. **Experiments** — a Python package (`sstable_experiments`) wraps the real `db_bench` binary and runs 5 core experiments, each isolating one SSTable design parameter.
 3. **Measurement** — every claim is backed by a real number from an actual RocksDB process, not a theoretical estimate.
 
 ---
@@ -55,6 +51,7 @@ This project reverse-engineers RocksDB's SSTable layer at three levels:
 ### The B-Tree Problem
 
 A B-Tree stores sorted keys in fixed-size pages (typically 4–16KB). An update to key `k` requires:
+
 1. Finding the page containing `k` (random seek)
 2. Reading the page into memory
 3. Modifying the key/value in memory
@@ -88,13 +85,13 @@ Every disk write is sequential. The cost is paid at read time (multiple files to
 
 ### The Core Tradeoff
 
-| Property | B-Tree | LSM / SSTable |
-|---|---|---|
-| Write latency | High (random I/O) | Low (sequential I/O) |
-| Read latency | Low (single file) | Higher (multiple files) |
-| Write amplification | Low | High (1–33×) |
-| Space amplification | Low | Medium |
-| SSD wear | High | Low |
+| Property            | B-Tree            | LSM / SSTable           |
+| ------------------- | ----------------- | ----------------------- |
+| Write latency       | High (random I/O) | Low (sequential I/O)    |
+| Read latency        | Low (single file) | Higher (multiple files) |
+| Write amplification | Low               | High (1–33×)            |
+| Space amplification | Low               | Medium                  |
+| SSD wear            | High              | Low                     |
 
 RocksDB chooses LSM because modern workloads are write-heavy and sequential I/O on SSDs is dramatically faster and more durable than random I/O.
 
@@ -219,6 +216,7 @@ Every SST file produced by `BlockBasedTableBuilder::Finish()` has this exact on-
 ```
 
 **Key design choices:**
+
 - **Footer at the end** — reader seeks to `file_size - 56`, reads Footer, gets `BlockHandle`s for everything else. No fixed-position assumptions for any other block.
 - **Per-block `BlockTrailer`** — 5 bytes: 1 byte compression type + 4 bytes CRC32c. Corruption is detected at the block level; the rest of the file stays readable.
 - **Index block** — sorted `(separator_key, BlockHandle)` pairs enable O(log n) block lookup without reading any data block.
@@ -230,24 +228,25 @@ Every SST file produced by `BlockBasedTableBuilder::Finish()` has this exact on-
 
 The following 14 source files in `rocksdb/` have been annotated with `[Project annotation]` blocks:
 
-| File | Role |
-|---|---|
-| `table/format.h` | On-disk primitives: `BlockHandle`, `Footer`, `BlockTrailer` |
-| `table/block_fetcher.h` | Single I/O choke point: `pread()` + CRC32c + decompress |
-| `table/get_context.h` | Per-`Get()` state machine; tombstone short-circuit |
-| `table/block_based/block_based_table_builder.cc` | SST writer: `Add()` / `Flush()` / `Finish()` |
-| `table/block_based/block_based_table_reader.cc` | SST reader: Bloom → Index → Data pipeline |
-| `table/block_based/block_builder.h` | Delta encoding + restart points |
-| `table/block_based/index_builder.h` | Three index strategies: binary / hash / partitioned |
-| `table/block_based/full_filter_block.h` | Bloom filter: `AddWithPrevKey()` / `KeyMayMatch()` |
-| `table/block_based/block_cache.h` | HIGH/LOW priority tiers + cache key derivation |
-| `db/compaction/compaction_iterator.h` | Key visibility: drop shadows, apply tombstones, merge collapse |
-| `db/compaction/compaction_job.cc` | Subcompaction orchestration; where write-amp materialises |
-| `db/flush_job.cc` | MemTable → L0 via shared `BuildTable()` |
-| `db/version_edit.h` | Atomic MANIFEST record; replayed on crash recovery |
-| `db/version_set.h` | Live-file snapshot; `SuperVersion`; `FilePicker` |
+| File                                             | Role                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------- |
+| `table/format.h`                                 | On-disk primitives: `BlockHandle`, `Footer`, `BlockTrailer`    |
+| `table/block_fetcher.h`                          | Single I/O choke point: `pread()` + CRC32c + decompress        |
+| `table/get_context.h`                            | Per-`Get()` state machine; tombstone short-circuit             |
+| `table/block_based/block_based_table_builder.cc` | SST writer: `Add()` / `Flush()` / `Finish()`                   |
+| `table/block_based/block_based_table_reader.cc`  | SST reader: Bloom → Index → Data pipeline                      |
+| `table/block_based/block_builder.h`              | Delta encoding + restart points                                |
+| `table/block_based/index_builder.h`              | Three index strategies: binary / hash / partitioned            |
+| `table/block_based/full_filter_block.h`          | Bloom filter: `AddWithPrevKey()` / `KeyMayMatch()`             |
+| `table/block_based/block_cache.h`                | HIGH/LOW priority tiers + cache key derivation                 |
+| `db/compaction/compaction_iterator.h`            | Key visibility: drop shadows, apply tombstones, merge collapse |
+| `db/compaction/compaction_job.cc`                | Subcompaction orchestration; where write-amp materialises      |
+| `db/flush_job.cc`                                | MemTable → L0 via shared `BuildTable()`                        |
+| `db/version_edit.h`                              | Atomic MANIFEST record; replayed on crash recovery             |
+| `db/version_set.h`                               | Live-file snapshot; `SuperVersion`; `FilePicker`               |
 
 Each annotation follows this format:
+
 ```cpp
 // [Project annotation — RocksDB SSTable analysis]
 // Role:      <one line>
@@ -297,11 +296,6 @@ cd .. && cp rocksdb/db_bench db_bench
 # Run all 5 core experiments
 python python/run_all.py
 
-# Run stress scenarios
-python -m sstable_experiments.stress --scenario size
-python -m sstable_experiments.stress --scenario skew
-python -m sstable_experiments.stress --scenario crash
-python -m sstable_experiments.stress --scenario assumption
 ```
 
 ---
@@ -352,12 +346,12 @@ interval   write_ops_sec   read_ops_sec   file_size_mb
 **Read throughput peaks at interval=16 then falls sharply.**
 
 | interval | read_ops_sec | change from 16 |
-|---|---|---|
-| 4 | 818,230 | −1.4% |
-| 8 | 826,487 | −0.4% |
-| **16** | **830,047** | **peak** |
-| 32 | 765,456 | −7.8% |
-| 64 | 759,820 | −8.5% |
+| -------- | ------------ | -------------- |
+| 4        | 818,230      | −1.4%          |
+| 8        | 826,487      | −0.4%          |
+| **16**   | **830,047**  | **peak**       |
+| 32       | 765,456      | −7.8%          |
+| 64       | 759,820      | −8.5%          |
 
 Beyond interval=16, the binary search zone grows to 32 or 64 keys. Each `Seek` must scan more keys linearly after finding the right restart point. The degradation is clear and consistent.
 
@@ -412,13 +406,13 @@ bloom_bits   write_ops_sec   readrandom_ops_sec   readmissing_ops_sec
 
 **`readmissing` is the Bloom filter's clearest signal:**
 
-| bits/key | readmissing ops/sec | speedup vs no filter |
-|---|---|---|
-| 0 (no filter) | 756,229 | 1× baseline |
-| 5 | 2,887,753 | 3.8× |
-| **10 (default)** | **5,947,071** | **7.9×** |
-| 15 | 6,890,848 | 9.1× |
-| 20 | 7,185,456 | 9.5× |
+| bits/key         | readmissing ops/sec | speedup vs no filter |
+| ---------------- | ------------------- | -------------------- |
+| 0 (no filter)    | 756,229             | 1× baseline          |
+| 5                | 2,887,753           | 3.8×                 |
+| **10 (default)** | **5,947,071**       | **7.9×**             |
+| 15               | 6,890,848           | 9.1×                 |
+| 20               | 7,185,456           | 9.5×                 |
 
 Without a filter, every absent-key lookup hits the index block and data block of each SST — 2–3 disk reads per SST. With 10 bits/key, 99% of absent lookups are rejected in memory. The remaining 1% (false positives) still hit disk, but 99% don't.
 
@@ -491,6 +485,7 @@ Block size is a **cache utilisation decision**. Tune it based on your read patte
 ### Concept
 
 The LRU block cache stores recently read blocks in RAM to avoid disk reads on repeated accesses. It uses two priority tiers:
+
 - **HIGH** — index and filter blocks (accessed on every single lookup)
 - **LOW** — data blocks (accessed per lookup on cache miss)
 
@@ -527,16 +522,17 @@ cache_mb   distribution   ops_sec    cache_hit_ratio
 
 **Cache size is the dominant variable — hit ratio scales 86× from 1MB to 256MB.**
 
-| cache_mb | hit ratio | throughput |
-|---|---|---|
-| 1 MB | ~0.9% | ~866K ops/sec |
-| 16 MB | ~14.7% | ~929K ops/sec |
-| 64 MB | ~54% | ~1,049K ops/sec |
-| 256 MB | ~78% | ~1,154K ops/sec |
+| cache_mb | hit ratio | throughput      |
+| -------- | --------- | --------------- |
+| 1 MB     | ~0.9%     | ~866K ops/sec   |
+| 16 MB    | ~14.7%    | ~929K ops/sec   |
+| 64 MB    | ~54%      | ~1,049K ops/sec |
+| 256 MB   | ~78%      | ~1,154K ops/sec |
 
 At each cache size, the uniform vs. Zipfian difference in hit ratio is only 0.2–0.4 percentage points — because 64MB already covers the working set well enough that skew adds no further benefit.
 
 **Zipfian advantage appears only at 256MB (+14% throughput):**
+
 - Uniform: 1,082,075 ops/sec
 - Zipfian: 1,226,143 ops/sec
 
@@ -592,6 +588,7 @@ num_keys    bytes_written_mb   user_data_mb   write_amp
 **WA=0 at 100K keys.** The dataset fits entirely in MemTable and L0. No compaction triggered during the benchmark window — zero extra bytes written.
 
 **WA grows with dataset size:**
+
 - 500K keys → WA=1.23× (L0→L1 compaction starts)
 - 1M keys → WA=1.66× (L1 begins filling)
 - 2M keys → WA=2.86× (L1→L2 compaction kicks in)
@@ -600,208 +597,25 @@ num_keys    bytes_written_mb   user_data_mb   write_amp
 
 ### Conclusion
 
-Write amplification is a **dataset-size tax, not a fixed constant**. It grows as deeper compaction levels fill up. Small datasets see near-zero WA; production databases with billions of keys reach 20–33×. This experiment establishes the growth curve; Stress §E.1 extends it to 10M keys.
+Write amplification is a **dataset-size tax, not a fixed constant**. It grows as deeper compaction levels fill up. Small datasets see near-zero WA; production databases with billions of keys reach 20–33×.
 
 ---
 
-## 12. Stress Experiment §E.1 — Data-Size Scaling
-
-### What It Tests
-
-Extension of Experiment 5 to 10M keys — measuring WA as L2/L3 compaction becomes significant.
-
-### Chart
-
-![Stress E.1: Data-Size Scaling](experiments/out/figs/stress_e1_data_size.png)
-
-### Results
-
-```
-num_keys      bytes_written_mb   user_data_mb   write_amp
-   100,000                0.00          26.7       0.00
-   500,000              165.35         133.5       1.24
- 1,000,000              442.88         267.0       1.66
- 5,000,000            7,135.52       1,335.1       5.34
-10,000,000           19,274.17       2,670.3       7.22
-```
-
-### Analysis
-
-**WA grows super-linearly.** The jump from 2M (WA=2.86×) to 5M (WA=5.34×) to 10M keys (WA=7.22×) shows the inflection point where L2/L3 compaction dominates.
-
-At 10M keys, 2.5GB of user data causes 19.3GB of actual disk writes — each key is rewritten multiple times as it moves through compaction levels.
-
-**Extrapolation:** At 100M keys (~25GB user data), WA would likely reach 15–20×. At 1 billion keys, approaching the theoretical 30–33× ceiling as L4/L5/L6 fill up.
-
----
-
-## 13. Stress Experiment §E.2 — Skewed Workload
-
-### What It Tests
-
-How block-cache hit ratio and throughput change as Zipfian skew (theta) increases from 0.0 (uniform) to 1.2 (highly skewed), with a fixed 64MB cache.
-
-### Chart
-
-![Stress E.2: Skewed Workload](experiments/out/figs/stress_e2_skew.png)
-
-### Results
-
-```
-theta   ops_sec    cache_hit_ratio
-  0.0 1,074,997           0.5405
-  0.5 1,082,467           0.5416
-  0.8 1,079,493           0.5407
- 0.99 1,085,770           0.5427
-  1.2 1,082,702           0.5402
-```
-
-### Analysis
-
-**Cache hit ratio is completely flat at ~54% across all skew levels.** Both throughput and hit ratio are essentially identical from theta=0.0 to theta=1.2.
-
-**Why:** The 64MB cache is large enough relative to this 500K-key working set that even uniform access achieves 54% hit rate. Adding skew concentrates more reads on fewer keys, but those keys were already hitting the cache at 54%. There is no marginal benefit.
-
-**Implication:** A smaller cache (1–4MB) would show a clear Zipfian advantage — the hot working set would fit in cache under skewed access but not under uniform access. **Cache sizing matters more than access skew when the cache is adequately sized.**
-
----
-
-## 14. Stress Experiment §E.3 — WAL Crash Recovery
-
-### What It Tests
-
-Whether RocksDB recovers correctly after a `SIGKILL` (hard kill — no cleanup possible) at arbitrary points during an active write workload.
-
-### Background
-
-Every `Put()` is first appended to the **Write-Ahead Log** (WAL, `000001.log`) before going to the MemTable. On `DB::Open()` after a crash, RocksDB replays any WAL entries whose data was not yet flushed to an SST file. This replay is deterministic — it handles partial writes at the end of the log caused by the crash.
-
-### Method
-
-```python
-for kill_after_s in [2, 4, 8, 15]:
-    proc = Popen([db_bench, "--benchmarks=fillrandom", "--num=2000000"])
-    time.sleep(kill_after_s)
-    proc.send_signal(SIGKILL)          # hard kill, no cleanup
-    proc.wait()
-
-    # Measure BEFORE reopen (WAL replay clears .log files)
-    sst_mb = sum(*.sst file sizes) / MB
-    wal_mb = sum(*.log file sizes) / MB
-
-    # Attempt recovery
-    recover = run([db_bench, "--use_existing_db=1", "--benchmarks=readseq"])
-    reopen_ok = (recover.returncode == 0)
-```
-
-### Chart
-
-![Stress E.3: WAL Crash Recovery](experiments/out/figs/stress_e3_crash_wal.png)
-
-### Results
-
-```
-kill_after_s   reopen_ok   sst_mb   wal_mb
-           2        True   307.66    15.68
-           4        True   363.75    52.96
-           8        True   317.10    59.00
-          15        True   316.94    59.01
-```
-
-### Analysis
-
-**`reopen_ok=True` at every kill point — crash recovery is unconditional.**
-
-RocksDB correctly reopened and replayed the WAL after SIGKILL at 2s, 4s, 8s, and 15s. No data corruption. No failed recovery. This proves crash consistency does not require a clean shutdown.
-
-**SST vs WAL split at kill time:**
-- **2s kill:** 307MB already in SSTs (flush completed quickly), only 15MB in WAL. Flush jobs ran fast at the start.
-- **4–15s:** SSTs stabilise at ~317MB while WAL grows to 53–59MB. Background compaction plateaued; new writes kept accumulating in the WAL faster than they were flushed.
-
-**What the 59MB WAL represents:** ~230,000 keys that were written to the WAL but not yet flushed to SST files. All of them were recovered on reopen.
-
-**The only writes that can be lost:** Writes in the MemTable but not yet WAL-synced (controlled by `--sync=1` flag). With default settings (`sync=0`, group commit), a brief window exists after `Put()` returns but before the next WAL batch fsync. In practice this window is microseconds.
-
-### Conclusion
-
-RocksDB's WAL provides **unconditional crash safety**. `DB::Open()` WAL replay is deterministic, handles truncated logs, and reconstructs database state correctly regardless of kill timing. Production deployments do not require clean shutdown procedures for data safety.
-
----
-
-## 15. Stress Experiment §E.4 — Violated Assumptions
-
-### What It Tests
-
-RocksDB's write performance rests on two architectural assumptions. This experiment violates each and measures the impact.
-
-**Assumption 1: Group commit** — the WAL writer batches multiple concurrent writes into a single `fsync()`. Dozens of `Put()` calls from multiple threads are merged into one WAL write batch and flushed together. The cost of one disk round-trip is amortised across many writes.
-
-**Assumption 2: Background compaction headroom** — background threads continuously compact L0 files into L1+, keeping the L0 file count below the write stall threshold.
-
-**Code path:** WAL group commit in `rocksdb/db/db_impl/db_impl_write.cc`; background jobs in `rocksdb/db/db_impl/db_impl_compaction_flush.cc`
-
-### Setup
-
-Three scenarios, each writing **20,000 keys** (small to make the sync scenario finish in reasonable time):
-- **baseline** — normal `fillrandom`, default settings
-- **sync_per_write** — `--sync=1` forces one `fsync()` per write (violates group commit)
-- **bg_threads_1** — `--max_background_jobs=1` constrains background thread pool
-
-### Chart
-
-![Stress E.4: Violated Assumptions](experiments/out/figs/stress_e4_assumptions.png)
-
-### Results
-
-```
-scenario           ops_sec    vs baseline
-baseline           473,866        1×
-sync_per_write         324    1,462× slower
-bg_threads_1       416,415     1.14× slower
-```
-
-### Analysis
-
-**`sync_per_write` — 1,462× throughput collapse.**
-
-Normal operation: group commit amortises one disk round-trip (~3ms on NVMe) across dozens of writes. Effective disk cost per write = 3ms / 50 writes = 0.06ms.
-
-With `sync=1`: one `fsync()` per write. Every `Put()` waits 3ms for the disk round-trip before returning. 20,000 writes × 3ms = 60 seconds of pure I/O wait. Throughput = 20,000 / 60s = 333 ops/sec (measured: 324 ops/sec).
-
-The CPU is nearly idle — it is waiting for the disk 99.9% of the time. This is not a performance regression; it is a fundamental breakdown. Group commit is not an optimisation — it is what makes RocksDB's write throughput physically possible.
-
-**`bg_threads_1` — only 14% slower at small scale.**
-
-Restricting background jobs to 1 thread drops throughput from 473K to 416K ops/sec. At 20,000 keys, L0 rarely fills up — background compaction pressure is low. The thread constraint doesn't bind.
-
-At large scale (millions of keys, sustained write load), this would cause write stalls. When L0 accumulates too many files, RocksDB pauses all writes until compaction reduces the count. A single background thread cannot keep pace with continuous flush output, causing cascading stalls that reduce write throughput far more than 14%.
-
-### Conclusion
-
-Group commit is not a tuning option — it is the **structural foundation of RocksDB's write performance**. The 1,462× collapse when it is disabled shows that the system's throughput is built entirely on the assumption that disk latency is shared across many operations. Remove that sharing and write throughput falls to the raw speed of the disk.
-
----
-
-## 16. Summary and Key Findings
+## 12. Summary and Key Findings
 
 ### Results Table
 
-| # | Experiment | Key Metric | Result | Implication |
-|---|---|---|---|---|
-| 1 | Restart interval | Read throughput at interval=16 | 830K ops/sec (peak) | Default=16 is exactly at the performance cliff |
-| 1 | Restart interval | File size change (4→64) | 1.6% reduction | Delta encoding saves little with short keys + large values |
-| 2 | Bloom filter | readmissing speedup at 10 bits | 7.9× vs no filter | Bloom filter: highest-ROI memory investment in RocksDB |
-| 2 | Bloom filter | Knee of curve | 10 bits/key | 10→20 bits: +21% throughput, +100% memory |
-| 3 | Block size | Read throughput at 65KB vs 512B | +8% | Larger blocks win on warm-cache workloads |
-| 3 | Block size | File size change (512B→65KB) | 6% reduction | Values dominate file size; block overhead is small |
-| 4 | Cache + skew | Hit ratio scaling (1MB→256MB) | 0.9% → 78% (86×) | Cache size is the dominant variable |
-| 4 | Cache + skew | Zipfian advantage | +14% at 256MB only | Skew helps only when cache covers the hot working set |
-| 5 | Write amplification | WA at 2M keys | 2.86× | WA is a dataset-size tax, not fixed |
-| §E.1 | Data scaling | WA at 10M keys | 7.22× | Super-linear growth as L2/L3 fill up |
-| §E.2 | Skewed workload | Hit ratio across theta 0→1.2 | Flat ~54% | Cache sizing matters more than skew pattern |
-| §E.3 | Crash recovery | reopen_ok at all SIGKILL points | True (4/4) | WAL recovery is unconditional |
-| §E.4 | Group commit | sync=1 throughput | 324 ops/sec (1,462× slower) | Group commit is a structural requirement |
-| §E.4 | Background threads | bg_threads=1 impact | −14% at small scale | Bottleneck only at sustained large-scale load |
+| #   | Experiment          | Key Metric                      | Result                      | Implication                                                |
+| --- | ------------------- | ------------------------------- | --------------------------- | ---------------------------------------------------------- |
+| 1   | Restart interval    | Read throughput at interval=16  | 830K ops/sec (peak)         | Default=16 is exactly at the performance cliff             |
+| 1   | Restart interval    | File size change (4→64)         | 1.6% reduction              | Delta encoding saves little with short keys + large values |
+| 2   | Bloom filter        | readmissing speedup at 10 bits  | 7.9× vs no filter           | Bloom filter: highest-ROI memory investment in RocksDB     |
+| 2   | Bloom filter        | Knee of curve                   | 10 bits/key                 | 10→20 bits: +21% throughput, +100% memory                  |
+| 3   | Block size          | Read throughput at 65KB vs 512B | +8%                         | Larger blocks win on warm-cache workloads                  |
+| 3   | Block size          | File size change (512B→65KB)    | 6% reduction                | Values dominate file size; block overhead is small         |
+| 4   | Cache + skew        | Hit ratio scaling (1MB→256MB)   | 0.9% → 78% (86×)            | Cache size is the dominant variable                        |
+| 4   | Cache + skew        | Zipfian advantage               | +14% at 256MB only          | Skew helps only when cache covers the hot working set      |
+| 5   | Write amplification | WA at 2M keys                   | 2.86×                       | WA is a dataset-size tax, not fixed                        |
 
 ### Three Deep Architectural Insights
 
@@ -812,11 +626,11 @@ The decision to never modify a file after writing (enforced in `BlockBasedTableB
 Bloom filter → Index block → Data block. Each layer costs memory and CPU at write time. Each layer saves disk I/O at read time. The 7.9× absent-key throughput gain at 10 bits/key is a direct, measurable return on 1.2MB of RAM per million keys. The Bloom filter is the most efficient memory-to-performance trade in the entire system.
 
 **Insight 3: Sequential I/O is the fundamental bet.**
-RocksDB's entire design — immutable SSTs, group-commit WAL, background compaction — is a bet that sequential disk writes are fast and random disk writes are slow. The 1,462× collapse when group commit is disabled proves how completely the system relies on this assumption. Performance does not degrade gracefully when the assumption is violated — it collapses to the raw speed of single-operation disk I/O.
+RocksDB's entire design — immutable SSTs, group-commit WAL, background compaction — is a bet that sequential disk writes are fast and random disk writes are slow. Write amplification growing from 1.23× at 500K keys to 2.86× at 2M keys proves the cost of this bet increases with dataset size. Performance does not degrade gracefully — it grows with the number of compaction levels that must be traversed.
 
 ---
 
-## 17. Conclusion
+## 13. Conclusion
 
 This project has demonstrated that RocksDB's SSTable layer is a carefully balanced system where every configurable parameter represents a tradeoff between competing resources:
 
@@ -826,8 +640,6 @@ This project has demonstrated that RocksDB's SSTable layer is a carefully balanc
 - Block cache size — RAM cost vs. disk reads (single most impactful tuning parameter)
 - Write amplification — not tunable at a fixed level; grows with dataset size
 
-The stress experiments reveal the system's boundaries: crash safety is unconditional (WAL replay requires no clean shutdown), write amplification grows super-linearly as deeper levels fill (WA=7.22× at 10M keys), and group commit is not optional (disabling it collapses throughput by 3 orders of magnitude).
-
 Every result in this report was produced by the `sstable_experiments` Python package running the real `db_bench` binary on RocksDB v8.11.5. All experiments are reproducible with a single command:
 
 ```bash
@@ -836,6 +648,6 @@ python python/run_all.py
 
 ---
 
-*CSVs: `experiments/out/csv/` | Figures: `experiments/out/figs/`*  
-*Annotated source: `rocksdb/table/` and `rocksdb/db/`*  
-*Python package: `python/sstable_experiments/`*
+_CSVs: `experiments/out/csv/` | Figures: `experiments/out/figs/`_  
+_Annotated source: `rocksdb/table/` and `rocksdb/db/`_  
+_Python package: `python/sstable_experiments/`_
